@@ -338,8 +338,50 @@ document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key===
 
 // ── DATA ──────────────────────────────────────────────────────────────────────
 async function loadData(){
-  const {data,error}=await sb.from('submissions').select('*').order('submitted_at',{ascending:false});
-  if(error){console.error(error);return;}
+  // Show loading state
+  document.getElementById('tableBody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--gray)">Loading submissions…</td></tr>';
+
+  // Try both possible table names (in case table was created with a different name)
+  const tableNames=['submissions','midyear_reset_submissions','midyear reset submissions'];
+  let data=null, lastError=null;
+
+  for(const tbl of tableNames){
+    const res=await sb.from(tbl).select('*').order('submitted_at',{ascending:false});
+    if(!res.error){
+      data=res.data;
+      console.log('Connected to table:',tbl,'— rows:',data.length);
+      break;
+    }
+    lastError=res.error;
+    console.warn('Table "'+tbl+'" failed:',res.error.message);
+  }
+
+  if(!data){
+    const msg=lastError?.message||'Unknown error';
+    document.getElementById('tableBody').innerHTML=`
+      <tr><td colspan="10">
+        <div style="padding:2rem;background:var(--red-light);border-radius:var(--radius);margin:1rem">
+          <div style="font-weight:700;color:var(--red);margin-bottom:.5rem">Could not load submissions</div>
+          <div style="font-size:.82rem;color:var(--red);margin-bottom:1rem">${msg}</div>
+          <div style="font-size:.82rem;color:var(--gray)">
+            <strong>Check the following:</strong><br>
+            1. Your table name in Supabase — go to Table Editor and confirm the exact name<br>
+            2. You have a SELECT policy for <strong>authenticated</strong> users on that table<br>
+            3. You are signed in (try signing out and back in)<br><br>
+            <strong>Your Supabase table name:</strong> open Table Editor, copy the exact name, and
+            <a href="mailto:?subject=Table name fix" style="color:var(--navy)">update the TABLE_NAME constant below in the code</a>
+          </div>
+        </div>
+      </td></tr>`;
+    return;
+  }
+
+  if(!data.length){
+    document.getElementById('tableBody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--gray)">No submissions yet — they will appear here once attendees complete the worksheet.</td></tr>';
+    renderStats([]);
+    return;
+  }
+
   allRows=data.map(r=>({...r, score:(r.sales_score||0)+(r.inventory_score||0)+(r.team_score||0)+(r.marketing_score||0)}));
   populateEventFilter();
   applyFilters();
