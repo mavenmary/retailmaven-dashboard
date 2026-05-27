@@ -211,7 +211,7 @@ tr:hover td{background:var(--navy-light);cursor:pointer}
     <!-- Charts -->
     <div class="charts-grid">
       <div class="chart-card">
-        <div class="chart-title">Average Score by Section</div>
+        <div class="chart-title">Performance by Core System</div>
         <div class="chart-wrap"><canvas id="chartSections"></canvas></div>
       </div>
       <div class="chart-card">
@@ -417,25 +417,27 @@ function renderCharts(){
   const total=allRows.length;
   if(!total) return;
 
-  // Section averages
-  const avg=key=>Math.round(allRows.reduce((s,r)=>s+(r[key]||0),0)/total);
-  const sData=[avg('sales_score'),avg('inventory_score'),avg('team_score'),avg('marketing_score')];
+  // Section averages — normalize each scored section (/25) to a 0-100% scale
+  const pct=key=>Math.round((allRows.reduce((s,r)=>s+(r[key]||0),0)/total)/25*100);
+  // Mindset/Richer Retailer Identity has no numeric score; use % of submissions with a mindset tweak filled in
+  const mindsetPct=Math.round(allRows.filter(r=>r.raw_data?.actionPlan?.mindsetTweak).length/total*100);
+  const sData=[pct('sales_score'),pct('inventory_score'),pct('team_score'),pct('marketing_score'),mindsetPct];
   if(sectionChart) sectionChart.destroy();
   sectionChart=new Chart(document.getElementById('chartSections'),{
     type:'bar',
     data:{
-      labels:['Cash Flow + Profit','Inventory Engine','Dream Team','Magnetic World'],
+      labels:['Cash Flow + Profit','Inventory Engine','Dream Team','Magnetic World','Richer Retailer'],
       datasets:[{
         data:sData,
-        backgroundColor:['#0B4D7D','#97BD44','#1A7A4A','#cc7700'],
+        backgroundColor:['#0B4D7D','#97BD44','#1A7A4A','#cc7700','#7E57C2'],
         borderRadius:5,borderSkipped:false,
       }]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' / 25'}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+'%'+(ctx.dataIndex===4?' completed':'')}}},
       scales:{
-        y:{max:25,ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{max:100,ticks:{stepSize:20,callback:v=>v+'%'},grid:{color:'rgba(0,0,0,.05)'}},
         x:{grid:{display:false}}
       }
     }
