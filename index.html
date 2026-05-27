@@ -211,7 +211,7 @@ tr:hover td{background:var(--navy-light);cursor:pointer}
     <!-- Charts -->
     <div class="charts-grid">
       <div class="chart-card">
-        <div class="chart-title">Average Score by Section</div>
+        <div class="chart-title">Performance by Core System</div>
         <div class="chart-wrap"><canvas id="chartSections"></canvas></div>
       </div>
       <div class="chart-card">
@@ -250,14 +250,15 @@ tr:hover td{background:var(--navy-light);cursor:pointer}
               <th onclick="sortBy('webinar')">Event <span class="sort-icon">↕</span></th>
               <th onclick="sortBy('score')">Score <span class="sort-icon">↕</span></th>
               <th onclick="sortBy('imu')">IMU <span class="sort-icon">↕</span></th>
-              <th>Cash Flow Tweak</th>
-              <th>Inventory Tweak</th>
-              <th>Team Tweak</th>
-              <th>Marketing Tweak</th>
+              <th>Cash Flow + Profit Tweak</th>
+              <th>Inventory Engine Tweak</th>
+              <th>Dream Team Tweak</th>
+              <th>Magnetic World Tweak</th>
+              <th>Richer Retailer Tweak</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="10" class="empty-state">Loading…</td></tr>
+            <tr><td colspan="11" class="empty-state">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -339,7 +340,7 @@ document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key===
 // ── DATA ──────────────────────────────────────────────────────────────────────
 async function loadData(){
   // Show loading state
-  document.getElementById('tableBody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--gray)">Loading submissions…</td></tr>';
+  document.getElementById('tableBody').innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--gray)">Loading submissions…</td></tr>';
 
   // Try both possible table names (in case table was created with a different name)
   const tableNames=['submissions','midyear_reset_submissions','midyear reset submissions'];
@@ -359,7 +360,7 @@ async function loadData(){
   if(!data){
     const msg=lastError?.message||'Unknown error';
     document.getElementById('tableBody').innerHTML=`
-      <tr><td colspan="10">
+      <tr><td colspan="11">
         <div style="padding:2rem;background:var(--red-light);border-radius:var(--radius);margin:1rem">
           <div style="font-weight:700;color:var(--red);margin-bottom:.5rem">Could not load submissions</div>
           <div style="font-size:.82rem;color:var(--red);margin-bottom:1rem">${msg}</div>
@@ -377,7 +378,7 @@ async function loadData(){
   }
 
   if(!data.length){
-    document.getElementById('tableBody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--gray)">No submissions yet — they will appear here once attendees complete the worksheet.</td></tr>';
+    document.getElementById('tableBody').innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--gray)">No submissions yet — they will appear here once attendees complete the worksheet.</td></tr>';
     renderStats([]);
     return;
   }
@@ -416,25 +417,27 @@ function renderCharts(){
   const total=allRows.length;
   if(!total) return;
 
-  // Section averages
-  const avg=key=>Math.round(allRows.reduce((s,r)=>s+(r[key]||0),0)/total);
-  const sData=[avg('sales_score'),avg('inventory_score'),avg('team_score'),avg('marketing_score')];
+  // Section averages — normalize each scored section (/25) to a 0-100% scale
+  const pct=key=>Math.round((allRows.reduce((s,r)=>s+(r[key]||0),0)/total)/25*100);
+  // Mindset/Richer Retailer Identity has no numeric score; use % of submissions with a mindset tweak filled in
+  const mindsetPct=Math.round(allRows.filter(r=>r.raw_data?.actionPlan?.mindsetTweak).length/total*100);
+  const sData=[pct('sales_score'),pct('inventory_score'),pct('team_score'),pct('marketing_score'),mindsetPct];
   if(sectionChart) sectionChart.destroy();
   sectionChart=new Chart(document.getElementById('chartSections'),{
     type:'bar',
     data:{
-      labels:['Sales & Cash Flow','Inventory','Team','Marketing'],
+      labels:['Cash Flow + Profit','Inventory Engine','Dream Team','Magnetic World','Richer Retailer'],
       datasets:[{
         data:sData,
-        backgroundColor:['#0B4D7D','#97BD44','#1A7A4A','#cc7700'],
+        backgroundColor:['#0B4D7D','#97BD44','#1A7A4A','#cc7700','#7E57C2'],
         borderRadius:5,borderSkipped:false,
       }]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' / 25'}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+'%'+(ctx.dataIndex===4?' completed':'')}}},
       scales:{
-        y:{max:25,ticks:{stepSize:5},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{max:100,ticks:{stepSize:20,callback:v=>v+'%'},grid:{color:'rgba(0,0,0,.05)'}},
         x:{grid:{display:false}}
       }
     }
@@ -531,7 +534,7 @@ function renderTable(){
   const tbody=document.getElementById('tableBody');
   document.getElementById('resultCount').textContent=filtered.length+' result'+(filtered.length!==1?'s':'');
   if(!filtered.length){
-    tbody.innerHTML='<tr><td colspan="10" class="empty-state">No submissions match your filters.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="11" class="empty-state">No submissions match your filters.</td></tr>';
     return;
   }
   tbody.innerHTML=filtered.map((r,i)=>{
@@ -556,6 +559,7 @@ function renderTable(){
       <td class="tweak-cell">${esc(r.inventory_tweak||'—')}</td>
       <td class="tweak-cell">${esc(r.team_tweak||'—')}</td>
       <td class="tweak-cell">${esc(r.marketing_tweak||'—')}</td>
+      <td class="tweak-cell">${esc(r.raw_data?.actionPlan?.mindsetTweak||'—')}</td>
     </tr>`;
   }).join('');
 }
@@ -585,10 +589,10 @@ function openDetail(idx){
 
   document.getElementById('detailBody').innerHTML=`
     <div class="detail-scores">
-      ${sb4('Sales',r.sales_score)}
-      ${sb4('Inventory',r.inventory_score)}
-      ${sb4('Team',r.team_score)}
-      ${sb4('Marketing',r.marketing_score)}
+      ${sb4('Cash Flow + Profit',r.sales_score)}
+      ${sb4('Inventory Engine',r.inventory_score)}
+      ${sb4('Dream Team',r.team_score)}
+      ${sb4('Magnetic World',r.marketing_score)}
     </div>
     <div style="display:flex;justify-content:space-between;background:var(--navy-light);border-radius:var(--radius-sm);padding:.8rem 1rem;margin-bottom:1.2rem">
       <div><div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--navy)">IMU</div><div style="font-size:1.5rem;font-weight:800;color:${imuColor}">${r.imu||'—'}</div></div>
@@ -596,7 +600,7 @@ function openDetail(idx){
     </div>
 
     <div class="detail-section">
-      ${sect('Sales & Cash Flow')}
+      ${sect('The Cash Flow + Profit System')}
       ${row('H1 Sales Q1 (TY)',money(d.sales?.q1ty))}
       ${row('H1 Sales Q1 (LY)',money(d.sales?.q1ly))}
       ${row('H1 Sales Q2 (TY)',money(d.sales?.q2ty))}
@@ -610,7 +614,7 @@ function openDetail(idx){
     </div>
 
     <div class="detail-section">
-      ${sect('Inventory')}
+      ${sect('The Inventory Engine')}
       ${row('Received H1 (TY)',money(d.inventory?.recTY))}
       ${row('Received H1 (LY)',money(d.inventory?.recLY))}
       ${row('Sales at Cost H1 (TY)',money(d.inventory?.cstTY))}
@@ -623,7 +627,7 @@ function openDetail(idx){
     </div>
 
     <div class="detail-section">
-      ${sect('Team')}
+      ${sect('The Dream Team Blueprint')}
       ${row('Team Meetings H1 (TY)',d.team?.meetTY)}
       ${row('Team Meetings H1 (LY)',d.team?.meetLY)}
       ${row('1:1 Reviews H1 (TY)',d.team?.oneTY)}
@@ -636,7 +640,7 @@ function openDetail(idx){
     </div>
 
     <div class="detail-section">
-      ${sect('Marketing')}
+      ${sect('The Magnetic World Building System')}
       ${row('Most Profitable Customer',d.marketing?.customer)}
       ${row('Message Example',d.marketing?.message)}
       ${row('Emails Sent Q1',d.marketing?.emQ1)}
@@ -652,7 +656,7 @@ function openDetail(idx){
     </div>
 
     <div class="detail-section">
-      ${sect('Mindset & Action Plan')}
+      ${sect('The Richer Retailer Identity')}
       ${twk(d.actionPlan?.mindsetTweak,d.actionPlan?.mindsetDeadline)}
       ${row('Most Proud of from H1',d.actionPlan?.proudOf)}
       ${row('Biggest Change Before Aug 1',d.actionPlan?.biggestChange)}
