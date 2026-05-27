@@ -577,7 +577,9 @@ function openDetail(idx){
     (r.webinar?' · '+r.webinar:'');
 
   const sb4=(lbl,val)=>`<div class="detail-score-box"><div class="dsb-label">${lbl}</div><div class="dsb-val" style="color:${(val||0)>=18?'var(--success)':(val||0)>=11?'var(--amber)':'var(--red)'}">${val||'—'}<span style="font-size:.8rem;color:var(--gray)"> /25</span></div></div>`;
-  const row=(l,v)=>v?`<div class="detail-row"><span class="dr-label">${l}</span><span class="dr-val">${esc(v)}</span></div>`:'';
+  const row=(l,v)=>(v||v===0)?`<div class="detail-row"><span class="dr-label">${l}</span><span class="dr-val">${esc(v)}</span></div>`:'';
+  const list=(l,arr)=>(Array.isArray(arr)&&arr.length)?`<div class="detail-row"><span class="dr-label">${l}</span><span class="dr-val">${arr.map(esc).join('<br>')}</span></div>`:'';
+  const money=v=>(v||v===0)?'$'+Number(v).toLocaleString():null;
   const twk=(t,by)=>t?`<div class="tweak-block"><strong>Tweak</strong>${esc(t)}${by?`<span style="font-size:.75rem;color:var(--gray)"> — by ${esc(by)}</span>`:''}</div>`:'';
   const sect=(title)=>`<div class="detail-section-title">${title}</div>`;
 
@@ -595,9 +597,13 @@ function openDetail(idx){
 
     <div class="detail-section">
       ${sect('Sales & Cash Flow')}
-      ${row('H1 Sales Q1 (TY)',d.sales?.q1ty?'$'+Number(d.sales.q1ty).toLocaleString():null)}
-      ${row('H1 Sales Q2 (TY)',d.sales?.q2ty?'$'+Number(d.sales.q2ty).toLocaleString():null)}
-      ${row('IMU',r.imu)}
+      ${row('H1 Sales Q1 (TY)',money(d.sales?.q1ty))}
+      ${row('H1 Sales Q1 (LY)',money(d.sales?.q1ly))}
+      ${row('H1 Sales Q2 (TY)',money(d.sales?.q2ty))}
+      ${row('H1 Sales Q2 (LY)',money(d.sales?.q2ly))}
+      ${row('IMU Cost',money(d.sales?.imuCost))}
+      ${row('IMU Retail',money(d.sales?.imuRetail))}
+      ${row('IMU',r.imu||d.sales?.imuResult)}
       ${row('IMU Action',d.sales?.imuAction)}
       ${row('Sales Trend',d.sales?.trend)}
       ${twk(r.cf_tweak,d.sales?.cfDeadline)}
@@ -605,8 +611,10 @@ function openDetail(idx){
 
     <div class="detail-section">
       ${sect('Inventory')}
-      ${row('Received H1 (TY)',d.inventory?.recTY?'$'+Number(d.inventory.recTY).toLocaleString():null)}
-      ${row('Sales at Cost H1 (TY)',d.inventory?.cstTY?'$'+Number(d.inventory.cstTY).toLocaleString():null)}
+      ${row('Received H1 (TY)',money(d.inventory?.recTY))}
+      ${row('Received H1 (LY)',money(d.inventory?.recLY))}
+      ${row('Sales at Cost H1 (TY)',money(d.inventory?.cstTY))}
+      ${row('Sales at Cost H1 (LY)',money(d.inventory?.cstLY))}
       ${row('Situation',d.inventory?.situation)}
       ${row('To Cancel',d.inventory?.cancel)}
       ${row('To Reorder',d.inventory?.reorder)}
@@ -617,10 +625,13 @@ function openDetail(idx){
     <div class="detail-section">
       ${sect('Team')}
       ${row('Team Meetings H1 (TY)',d.team?.meetTY)}
+      ${row('Team Meetings H1 (LY)',d.team?.meetLY)}
       ${row('1:1 Reviews H1 (TY)',d.team?.oneTY)}
+      ${row('1:1 Reviews H1 (LY)',d.team?.oneLY)}
       ${row('WEIP Hours / Week',d.team?.weipHrs)}
       ${row('Biggest Time Thief',d.team?.thief)}
       ${row('Will Stop / Delegate',d.team?.stop)}
+      ${list('Structure Issues',d.team?.structureIssues)}
       ${twk(r.team_tweak,d.team?.teamDeadline)}
     </div>
 
@@ -628,8 +639,15 @@ function openDetail(idx){
       ${sect('Marketing')}
       ${row('Most Profitable Customer',d.marketing?.customer)}
       ${row('Message Example',d.marketing?.message)}
+      ${row('Emails Sent Q1',d.marketing?.emQ1)}
+      ${row('Emails Sent Q2',d.marketing?.emQ2)}
+      ${row('Emails Sent Q3',d.marketing?.emQ3)}
+      ${row('Social Posts Q1',d.marketing?.spQ1)}
+      ${row('Social Posts Q2',d.marketing?.spQ2)}
+      ${row('Social Posts Q3',d.marketing?.spQ3)}
       ${row('H2 Email Commit / Month',d.marketing?.emailCommit)}
       ${row('H2 Social Commit / Week',d.marketing?.socialCommit)}
+      ${row('H2 Events Commit',d.marketing?.eventsCommit)}
       ${twk(r.marketing_tweak,d.marketing?.mktDeadline)}
     </div>
 
@@ -653,17 +671,24 @@ function closeDetail(){
 function exportCSV(){
   const header=['Date','Store','Owner','Email','City','Webinar','Score /100',
     'Sales Score','Inventory Score','Team Score','Marketing Score','IMU',
-    'CF Tweak','Inventory Tweak','Team Tweak','Marketing Tweak','Mindset Tweak',
-    'Proud Of','Biggest Change'];
-  const rows=[header,...filtered.map(r=>[
-    new Date(r.submitted_at).toLocaleDateString(),
-    r.store_name,r.owner_name,r.email,r.city,r.webinar,r.score,
-    r.sales_score,r.inventory_score,r.team_score,r.marketing_score,r.imu,
-    r.cf_tweak,r.inventory_tweak,r.team_tweak,r.marketing_tweak,
-    r.raw_data?.actionPlan?.mindsetTweak||'',
-    r.raw_data?.actionPlan?.proudOf||'',
-    r.raw_data?.actionPlan?.biggestChange||'',
-  ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`))] ;
+    'Sales Q1 TY','Sales Q1 LY','Sales Q2 TY','Sales Q2 LY','IMU Cost','IMU Retail','IMU Action','Sales Trend','CF Tweak','CF Deadline',
+    'Received H1 TY','Received H1 LY','Sales at Cost H1 TY','Sales at Cost H1 LY','Inv Situation','To Cancel','To Reorder','To Clear','Inventory Tweak','Inv Deadline',
+    'Team Meetings TY','Team Meetings LY','1:1 Reviews TY','1:1 Reviews LY','WEIP Hrs/Wk','Time Thief','Stop/Delegate','Structure Issues','Team Tweak','Team Deadline',
+    'Profitable Customer','Message Example','Emails Q1','Emails Q2','Emails Q3','Social Posts Q1','Social Posts Q2','Social Posts Q3','Email Commit/Mo','Social Commit/Wk','Events Commit','Marketing Tweak','Mkt Deadline',
+    'Mindset Tweak','Mindset Deadline','Proud Of','Biggest Change'];
+  const rows=[header,...filtered.map(r=>{
+    const d=r.raw_data||{};
+    return [
+      new Date(r.submitted_at).toLocaleDateString(),
+      r.store_name,r.owner_name,r.email,r.city,r.webinar,r.score,
+      r.sales_score,r.inventory_score,r.team_score,r.marketing_score,r.imu,
+      d.sales?.q1ty,d.sales?.q1ly,d.sales?.q2ty,d.sales?.q2ly,d.sales?.imuCost,d.sales?.imuRetail,d.sales?.imuAction,d.sales?.trend,r.cf_tweak,d.sales?.cfDeadline,
+      d.inventory?.recTY,d.inventory?.recLY,d.inventory?.cstTY,d.inventory?.cstLY,d.inventory?.situation,d.inventory?.cancel,d.inventory?.reorder,d.inventory?.clear,r.inventory_tweak,d.inventory?.invDeadline,
+      d.team?.meetTY,d.team?.meetLY,d.team?.oneTY,d.team?.oneLY,d.team?.weipHrs,d.team?.thief,d.team?.stop,(d.team?.structureIssues||[]).join(' | '),r.team_tweak,d.team?.teamDeadline,
+      d.marketing?.customer,d.marketing?.message,d.marketing?.emQ1,d.marketing?.emQ2,d.marketing?.emQ3,d.marketing?.spQ1,d.marketing?.spQ2,d.marketing?.spQ3,d.marketing?.emailCommit,d.marketing?.socialCommit,d.marketing?.eventsCommit,r.marketing_tweak,d.marketing?.mktDeadline,
+      d.actionPlan?.mindsetTweak,d.actionPlan?.mindsetDeadline,d.actionPlan?.proudOf,d.actionPlan?.biggestChange,
+    ].map(v=>`"${String(v??'').replace(/"/g,'""')}"`);
+  })];
   const csv=rows.map(r=>r.join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const url=URL.createObjectURL(blob);
