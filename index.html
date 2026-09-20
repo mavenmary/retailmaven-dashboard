@@ -619,10 +619,14 @@ function openDetail(idx){
       ${row('Received H1 (LY)',money(d.inventory?.recLY))}
       ${row('Sales at Cost H1 (TY)',money(d.inventory?.cstTY))}
       ${row('Sales at Cost H1 (LY)',money(d.inventory?.cstLY))}
+      ${row('Inventory Turn (TY)',d.inventory?.turnTY)}
+      ${row('Inventory Turn (LY)',d.inventory?.turnLY)}
       ${row('Situation',d.inventory?.situation)}
+      ${row('Dead Stock',d.inventory?.deadStock)}
       ${row('To Cancel',d.inventory?.cancel)}
       ${row('To Reorder',d.inventory?.reorder)}
       ${row('To Clear',d.inventory?.clear)}
+      ${row('To Hold',d.inventory?.hold)}
       ${twk(r.inventory_tweak,d.inventory?.invDeadline)}
     </div>
 
@@ -632,6 +636,10 @@ function openDetail(idx){
       ${row('Team Meetings H1 (LY)',d.team?.meetLY)}
       ${row('1:1 Reviews H1 (TY)',d.team?.oneTY)}
       ${row('1:1 Reviews H1 (LY)',d.team?.oneLY)}
+      ${row('New Hires H1 (TY)',d.team?.newHiresTY)}
+      ${row('New Hires H1 (LY)',d.team?.newHiresLY)}
+      ${row('Turnover H1 (TY)',d.team?.turnoverTY)}
+      ${row('Turnover H1 (LY)',d.team?.turnoverLY)}
       ${row('WEIP Hours / Week',d.team?.weipHrs)}
       ${row('Biggest Time Thief',d.team?.thief)}
       ${row('Will Stop / Delegate',d.team?.stop)}
@@ -641,23 +649,49 @@ function openDetail(idx){
 
     <div class="detail-section">
       ${sect('The Magnetic World Building System')}
+      ${row('Emails Sent (Jan–Feb)',d.marketing?.emQ1)}
+      ${row('Emails Sent (Mar–Apr)',d.marketing?.emQ2)}
+      ${row('Emails Sent (May–Jun)',d.marketing?.emQ3)}
+      ${row('Email Open Rate (Jan–Feb)',d.marketing?.orQ1)}
+      ${row('Email Open Rate (Mar–Apr)',d.marketing?.orQ2)}
+      ${row('Email Open Rate (May–Jun)',d.marketing?.orQ3)}
+      ${row('Social Posts (Jan–Feb)',d.marketing?.spQ1)}
+      ${row('Social Posts (Mar–Apr)',d.marketing?.spQ2)}
+      ${row('Social Posts (May–Jun)',d.marketing?.spQ3)}
+      ${row('Posts with CTA (Jan–Feb)',d.marketing?.ctaQ1)}
+      ${row('Posts with CTA (Mar–Apr)',d.marketing?.ctaQ2)}
+      ${row('Posts with CTA (May–Jun)',d.marketing?.ctaQ3)}
+      ${row('Events Held (Jan–Feb)',d.marketing?.evQ1)}
+      ${row('Events Held (Mar–Apr)',d.marketing?.evQ2)}
+      ${row('Events Held (May–Jun)',d.marketing?.evQ3)}
       ${row('Most Profitable Customer',d.marketing?.customer)}
-      ${row('Message Example',d.marketing?.message)}
-      ${row('Emails Sent Q1',d.marketing?.emQ1)}
-      ${row('Emails Sent Q2',d.marketing?.emQ2)}
-      ${row('Emails Sent Q3',d.marketing?.emQ3)}
-      ${row('Social Posts Q1',d.marketing?.spQ1)}
-      ${row('Social Posts Q2',d.marketing?.spQ2)}
-      ${row('Social Posts Q3',d.marketing?.spQ3)}
+      ${row('Message to Send This Week',d.marketing?.message)}
       ${row('H2 Email Commit / Month',d.marketing?.emailCommit)}
       ${row('H2 Social Commit / Week',d.marketing?.socialCommit)}
-      ${row('H2 Events Commit',d.marketing?.eventsCommit)}
+      ${row('H2 Events / Promotions',d.marketing?.eventsCommit)}
       ${twk(r.marketing_tweak,d.marketing?.mktDeadline)}
     </div>
 
     <div class="detail-section">
       ${sect('The Richer Retailer Identity')}
       ${twk(d.actionPlan?.mindsetTweak,d.actionPlan?.mindsetDeadline)}
+      ${(()=>{
+        const scores=[
+          ['Cash Flow + Profit',d.actionPlan?.rrCfScore],
+          ['Inventory Engine',d.actionPlan?.rrInvScore],
+          ['Dream Team',d.actionPlan?.rrTeamScore],
+          ['Magnetic World Building',d.actionPlan?.rrMktScore],
+          ['Richer Retailer Identity',d.actionPlan?.rrMindsetScore],
+        ];
+        const total=d.actionPlan?.rrScore||r.rr_score;
+        const hasAny=scores.some(([,v])=>v!=null&&v!=='');
+        if(!hasAny&&!total) return '';
+        return `<div style="background:var(--gray-light);border-radius:var(--radius-sm);padding:.6rem .8rem;margin:.4rem 0">
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--navy);margin-bottom:.4rem">Richer Retailer Scorecard (1–5 per system)</div>
+          ${scores.map(([l,v])=>v!=null&&v!==''?`<div class="detail-row" style="padding:.2rem 0"><span class="dr-label" style="font-size:.78rem">${l}</span><span class="dr-val">${v}<span style="font-size:.7rem;color:var(--gray)"> /5</span></span></div>`:'').join('')}
+          ${total?`<div class="detail-row" style="border-top:1px solid var(--navy-mid);margin-top:.3rem;padding-top:.3rem"><span class="dr-label" style="font-weight:700">Total</span><span class="dr-val" style="font-weight:800;color:var(--navy)">${total}<span style="font-size:.7rem;color:var(--gray)"> /25</span></span></div>`:''}
+        </div>`;
+      })()}
       ${row('Most Proud of from H1',d.actionPlan?.proudOf)}
       ${row('Biggest Change Before Aug 1',d.actionPlan?.biggestChange)}
     </div>`;
@@ -676,10 +710,10 @@ function exportCSV(){
   const header=['Date','Store','Owner','Email','City','Webinar','Score /100',
     'Sales Score','Inventory Score','Team Score','Marketing Score','IMU',
     'Sales Q1 TY','Sales Q1 LY','Sales Q2 TY','Sales Q2 LY','IMU Cost','IMU Retail','IMU Action','Sales Trend','CF Tweak','CF Deadline',
-    'Received H1 TY','Received H1 LY','Sales at Cost H1 TY','Sales at Cost H1 LY','Inv Situation','To Cancel','To Reorder','To Clear','Inventory Tweak','Inv Deadline',
-    'Team Meetings TY','Team Meetings LY','1:1 Reviews TY','1:1 Reviews LY','WEIP Hrs/Wk','Time Thief','Stop/Delegate','Structure Issues','Team Tweak','Team Deadline',
-    'Profitable Customer','Message Example','Emails Q1','Emails Q2','Emails Q3','Social Posts Q1','Social Posts Q2','Social Posts Q3','Email Commit/Mo','Social Commit/Wk','Events Commit','Marketing Tweak','Mkt Deadline',
-    'Mindset Tweak','Mindset Deadline','Proud Of','Biggest Change'];
+    'Received H1 TY','Received H1 LY','Sales at Cost H1 TY','Sales at Cost H1 LY','Inv Turn TY','Inv Turn LY','Inv Situation','Dead Stock','To Cancel','To Reorder','To Clear','To Hold','Inventory Tweak','Inv Deadline',
+    'Team Meetings TY','Team Meetings LY','1:1 Reviews TY','1:1 Reviews LY','New Hires TY','New Hires LY','Turnover TY','Turnover LY','WEIP Hrs/Wk','Time Thief','Stop/Delegate','Structure Issues','Team Tweak','Team Deadline',
+    'Emails (Jan-Feb)','Emails (Mar-Apr)','Emails (May-Jun)','Open Rate (Jan-Feb)','Open Rate (Mar-Apr)','Open Rate (May-Jun)','Social Posts (Jan-Feb)','Social Posts (Mar-Apr)','Social Posts (May-Jun)','Posts w/CTA (Jan-Feb)','Posts w/CTA (Mar-Apr)','Posts w/CTA (May-Jun)','Events (Jan-Feb)','Events (Mar-Apr)','Events (May-Jun)','Profitable Customer','Message Example','Email Commit/Mo','Social Commit/Wk','Events Commit','Marketing Tweak','Mkt Deadline',
+    'Mindset Tweak','Mindset Deadline','RR CF Score','RR Inv Score','RR Team Score','RR Mkt Score','RR Mindset Score','RR Total /25','Proud Of','Biggest Change'];
   const rows=[header,...filtered.map(r=>{
     const d=r.raw_data||{};
     return [
@@ -687,10 +721,10 @@ function exportCSV(){
       r.store_name,r.owner_name,r.email,r.city,r.webinar,r.score,
       r.sales_score,r.inventory_score,r.team_score,r.marketing_score,r.imu,
       d.sales?.q1ty,d.sales?.q1ly,d.sales?.q2ty,d.sales?.q2ly,d.sales?.imuCost,d.sales?.imuRetail,d.sales?.imuAction,d.sales?.trend,r.cf_tweak,d.sales?.cfDeadline,
-      d.inventory?.recTY,d.inventory?.recLY,d.inventory?.cstTY,d.inventory?.cstLY,d.inventory?.situation,d.inventory?.cancel,d.inventory?.reorder,d.inventory?.clear,r.inventory_tweak,d.inventory?.invDeadline,
-      d.team?.meetTY,d.team?.meetLY,d.team?.oneTY,d.team?.oneLY,d.team?.weipHrs,d.team?.thief,d.team?.stop,(d.team?.structureIssues||[]).join(' | '),r.team_tweak,d.team?.teamDeadline,
-      d.marketing?.customer,d.marketing?.message,d.marketing?.emQ1,d.marketing?.emQ2,d.marketing?.emQ3,d.marketing?.spQ1,d.marketing?.spQ2,d.marketing?.spQ3,d.marketing?.emailCommit,d.marketing?.socialCommit,d.marketing?.eventsCommit,r.marketing_tweak,d.marketing?.mktDeadline,
-      d.actionPlan?.mindsetTweak,d.actionPlan?.mindsetDeadline,d.actionPlan?.proudOf,d.actionPlan?.biggestChange,
+      d.inventory?.recTY,d.inventory?.recLY,d.inventory?.cstTY,d.inventory?.cstLY,d.inventory?.turnTY,d.inventory?.turnLY,d.inventory?.situation,d.inventory?.deadStock,d.inventory?.cancel,d.inventory?.reorder,d.inventory?.clear,d.inventory?.hold,r.inventory_tweak,d.inventory?.invDeadline,
+      d.team?.meetTY,d.team?.meetLY,d.team?.oneTY,d.team?.oneLY,d.team?.newHiresTY,d.team?.newHiresLY,d.team?.turnoverTY,d.team?.turnoverLY,d.team?.weipHrs,d.team?.thief,d.team?.stop,(d.team?.structureIssues||[]).join(' | '),r.team_tweak,d.team?.teamDeadline,
+      d.marketing?.emQ1,d.marketing?.emQ2,d.marketing?.emQ3,d.marketing?.orQ1,d.marketing?.orQ2,d.marketing?.orQ3,d.marketing?.spQ1,d.marketing?.spQ2,d.marketing?.spQ3,d.marketing?.ctaQ1,d.marketing?.ctaQ2,d.marketing?.ctaQ3,d.marketing?.evQ1,d.marketing?.evQ2,d.marketing?.evQ3,d.marketing?.customer,d.marketing?.message,d.marketing?.emailCommit,d.marketing?.socialCommit,d.marketing?.eventsCommit,r.marketing_tweak,d.marketing?.mktDeadline,
+      d.actionPlan?.mindsetTweak,d.actionPlan?.mindsetDeadline,d.actionPlan?.rrCfScore,d.actionPlan?.rrInvScore,d.actionPlan?.rrTeamScore,d.actionPlan?.rrMktScore,d.actionPlan?.rrMindsetScore,d.actionPlan?.rrScore||r.rr_score,d.actionPlan?.proudOf,d.actionPlan?.biggestChange,
     ].map(v=>`"${String(v??'').replace(/"/g,'""')}"`);
   })];
   const csv=rows.map(r=>r.join(',')).join('\n');
